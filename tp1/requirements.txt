@@ -1,0 +1,6 @@
+numpy
+matplotlib
+scikit-image
+ipykernel
+jupyterlab
+notebook
