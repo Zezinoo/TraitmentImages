@@ -1,0 +1,25 @@
+MSE relative to reference (intensities normalized to [0, 1])
+Noise type    Noisy input         Mean     Gaussian       Median
+Additive         0.009565     0.007425     0.006641     0.007116
+Impulse          0.015335     0.008352     0.007477     0.005248
+
+Isolated impulse at (x=486, y=354), zero-based coordinates.
+Reference intensity: 0.815686
+Case                 Center error   Max influence on neighbors
+Noisy input           0.815686       0.000000
+Mean 3 x 3            0.087582       0.090632
+Gaussian, sigma=1     0.127369       0.078741
+Median 3 x 3          0.000000       0.000000
+Neighbor influence compares each result with the same filter applied
+after replacing only the selected impulse with its reference value.
+The median attenuates the isolated impulse without spreading it like
+the mean and Gaussian filters, which distribute its intensity to neighbors.
+
+Common house detail (x0, y0, x1, y1): (140, 120, 240, 220)
+Additive noise: choose Gaussian (sigma=1). It has the lowest MSE here
+and smooths the grain in the window/facade detail. Unwanted effect:
+window-frame edges and fine brick texture become blurred despite the lower MSE.
+Impulse noise: choose median (3 x 3). It has the lowest MSE here and
+removes isolated black/white specks while retaining the main window edges.
+Unwanted effect: thin lines and small texture details can disappear, and
+corners can become rounded even though the global MSE decreases.
