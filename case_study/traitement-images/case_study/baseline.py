@@ -16,8 +16,10 @@ def predict(image, reference, box):
     or the spatial structure of a vehicle. Keep this method unchanged when
     comparing its results with those of your own pipeline.
     """
+    "I can try to the Dog here"
+
     current = crop(image, box)
     empty = crop(reference, box)
-    score = float(abs(np.mean(current) - np.mean(empty)))
+    score = float(abs(np.mean(current) - np.mean(empty)))   
     decision = int(score > DECISION_THRESHOLD)
     return score, decision
