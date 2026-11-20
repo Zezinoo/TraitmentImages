@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="__LANG__">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Parking -- Démonstrateur / Demonstrator</title>
+    <style>
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: #f4f4f2;
+            color: #171717;
+            font: 16px system-ui, sans-serif
+        }
+
+        main {
+            max-width: 1100px;
+            margin: auto;
+            padding: 28px
+        }
+
+        header {
+            border-bottom: 2px solid #222;
+            margin-bottom: 24px
+        }
+
+        h1 {
+            font-size: 30px;
+            margin: 0 0 10px
+        }
+
+        p {
+            line-height: 1.6
+        }
+
+        label {
+            font-weight: 650
+        }
+
+        select,
+        button {
+            font: inherit;
+            padding: 9px;
+            background: white;
+            border: 1px solid #777;
+            border-radius: 4px
+        }
+
+        nav {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 22px 0
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 18px
+        }
+
+        .card strong {
+            display: block;
+            font-size: 38px;
+            margin-bottom: 5px
+        }
+
+        .meta {
+            color: #444
+        }
+
+        .scene {
+            background: white;
+            border: 1px solid #bbb
+        }
+
+        svg {
+            display: block;
+            width: 100%;
+            height: auto
+        }
+
+        .legend {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin: 12px 0
+        }
+
+        .key {
+            display: inline-block;
+            width: 30px;
+            height: 18px;
+            border: 3px solid #222;
+            vertical-align: middle;
+            margin-right: 6px
+        }
+
+        .key.free {
+            border-style: dashed
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin: 20px 0
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd
+        }
+
+        a {
+            color: #222
+        }
+
+        footer {
+            font-size: 14px;
+            color: #555;
+            border-top: 1px solid #bbb;
+            margin-top: 24px;
+            padding-top: 12px
+        }
+
+        @media(max-width:550px) {
+            main {
+                padding: 16px
+            }
+
+            .cards {
+                gap: 6px
+            }
+
+            .card {
+                padding: 10px
+            }
+
+            .card strong {
+                font-size: 28px
+            }
+
+            h1 {
+                font-size: 25px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <header>
+            <h1 id="title"></h1>
+            <p id="intro"></p>
+        </header>
+        <nav><label for="language">Langue / Language</label><select id="language">
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+            </select></nav>
+        <nav><label for="frame" id="choose"></label><button id="prev" type="button"
+                aria-label="Previous">&#8249;</button><select id="frame"></select><button id="next" type="button"
+                aria-label="Next">&#8250;</button></nav>
+        <p class="meta" id="meta"></p>
+        <div class="cards" aria-live="polite">
+            <div class="card"><strong id="free"></strong><span id="freeLabel"></span></div>
+            <div class="card"><strong id="busy"></strong><span id="busyLabel"></span></div>
+            <div class="card"><strong id="rate"></strong><span id="rateLabel"></span></div>
+        </div>
+        <div class="legend"><span><i class="key free"></i><span id="freeLegend"></span></span><span><i
+                    class="key"></i><span id="busyLegend"></span></span></div>
+        <div class="scene"><svg id="scene" role="img" aria-labelledby="sceneTitle">
+                <title id="sceneTitle"></title>
+            </svg></div>
+        <table>
+            <thead>
+                <tr>
+                    <th id="slotLabel"></th>
+                    <th id="stateLabel"></th>
+                </tr>
+            </thead>
+            <tbody id="slots"></tbody>
+        </table>
+        <p><a href="occupation.csv" download id="countsLink"></a> &#183; <a href="predictions.csv" download
+                id="decisionsLink"></a></p>
+        <footer>
+            <p id="notice"></p>
+            <p id="credit"></p>
+        </footer>
+    </main>
+    <script type="application/json" id="data">__DATA__</script>
+    <script>
+        'use strict';
+        const data = JSON.parse(document.getElementById('data').textContent);
+        let en = document.documentElement.lang === 'en';
+        const language = document.getElementById('language'); language.value = en ? 'en' : 'fr';
+        function vocabulary(english) {
+            return english ? {
+                title: 'Parking availability', intro: 'An offline image-processing prototype. Results concern only the monitored spaces.', choose: 'Observation', freeLabel: 'estimated free spaces', busyLabel: 'estimated occupied spaces', rateLabel: 'estimated occupancy', freeLegend: 'Predicted free \u00b7 dashed border', busyLegend: 'Predicted occupied \u00b7 solid border', slotLabel: 'Space', stateLabel: 'Estimated state', countsLink: 'Counts and occupancy (CSV)', decisionsLink: 'Individual decisions (CSV)', notice: 'Estimates, not guaranteed availability. Shadows, lighting and occlusions can produce false free-space announcements. Capture date and time refer to the supplied photographs, not live conditions.', credit: 'Photographs: CNRPark+EXT \u00b7 Amato et al. \u00b7 cnrpark.it \u00b7 ODbL 1.0. No image is uploaded; this report works offline.', free: 'Free', busy: 'Occupied'
+            } : { title: 'Disponibilité du parking', intro: 'Un prototype de traitement d\u2019images hors ligne. Les résultats concernent uniquement les places suivies.', choose: 'Observation', freeLabel: 'places libres estimées', busyLabel: 'places occupées estimées', rateLabel: 'taux d\u2019occupation estimé', freeLegend: 'Prédit libre \u00b7 contour en tirets', busyLegend: 'Prédit occupé \u00b7 contour continu', slotLabel: 'Place', stateLabel: 'État estimé', countsLink: 'Comptages et taux d\u2019occupation (CSV)', decisionsLink: 'Décisions individuelles (CSV)', notice: 'Estimations, sans garantie de disponibilité. Les ombres, l\u2019éclairage et les occultations peuvent provoquer de fausses annonces de places libres. La date et l\u2019heure sont celles des photographies fournies, pas d\u2019une observation en direct.', credit: 'Photographies : CNRPark+EXT \u00b7 Amato et al. \u00b7 cnrpark.it \u00b7 ODbL 1.0. Aucune image n\u2019est envoyée ; ce rapport fonctionne hors ligne.', free: 'Libre', busy: 'Occupée' };
+        }
+        let words = vocabulary(en);
+        function setLanguage() {
+            en = language.value === 'en'; words = vocabulary(en); document.documentElement.lang = en ? 'en' : 'fr';
+            for (const [id, value] of Object.entries(words)) { const e = document.getElementById(id); if (e) e.textContent = value; }
+            document.title = data.trial ? data.trial + ' \u00b7 ' + words.title : words.title;
+            if (data.trial) document.getElementById('title').textContent = words.title + ' \u00b7 ' + data.trial;
+            document.getElementById('prev').setAttribute('aria-label', en ? 'Previous' : 'Précédente');
+            document.getElementById('next').setAttribute('aria-label', en ? 'Next' : 'Suivante');
+            show();
+        }
+        const choose = document.getElementById('frame'), svg = document.getElementById('scene'), ns = 'http://www.w3.org/2000/svg';
+        data.frames.forEach((r, i) => { const o = document.createElement('option'); o.value = i; o.textContent = `${r.image_id} \u00b7 ${r.jour} ${r.heure}`; choose.append(o); });
+        function element(tag, attrs) { const e = document.createElementNS(ns, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; }
+        function show() {
+            const row = data.frames[Number(choose.value)];
+            document.getElementById('free').textContent = row.libres; document.getElementById('busy').textContent = row.occupees;
+            document.getElementById('freeLabel').textContent = en ? (row.libres === 1 ? 'estimated free space' : words.freeLabel) : (row.libres === 1 ? 'place libre estimée' : words.freeLabel); document.getElementById('busyLabel').textContent = en ? (row.occupees === 1 ? 'estimated occupied space' : words.busyLabel) : (row.occupees === 1 ? 'place occupée estimée' : words.busyLabel);
+            document.getElementById('rate').textContent = new Intl.NumberFormat(en ? 'en' : 'fr', { maximumFractionDigits: 1 }).format(row.taux_occupation_percent) + ' %';
+            document.getElementById('meta').textContent = `${row.image_id} \u00b7 ${row.jour} ${row.heure} \u00b7 ${row.meteo} \u00b7 ${data.regions.length} ${en ? 'monitored spaces' : 'places suivies'}`;
+            svg.replaceChildren(); const title = element('title', { id: 'sceneTitle' }); title.textContent = `${row.image_id} : ${row.libres} ${words.freeLabel}`; svg.append(title);
+            const im = element('image', { href: row.preview_file }); svg.append(im);
+            const probe = new Image(); probe.onload = () => { if (choose.value !== String(data.frames.indexOf(row))) return; svg.setAttribute('viewBox', `0 0 ${probe.naturalWidth} ${probe.naturalHeight}`); im.setAttribute('width', probe.naturalWidth); im.setAttribute('height', probe.naturalHeight); }; probe.src = row.preview_file;
+            const tbody = document.getElementById('slots'); tbody.replaceChildren();
+            data.regions.forEach((r, i) => {
+                const d = row.decisions[i], rect = { x: r.x0, y: r.y0, width: r.x1 - r.x0, height: r.y1 - r.y0, fill: 'none' };
+                svg.append(element('rect', { ...rect, stroke: 'white', 'stroke-width': 7 })); svg.append(element('rect', { ...rect, stroke: 'black', 'stroke-width': 3, 'stroke-dasharray': d.occupation_predite ? 'none' : '9 6' }));
+                const label = element('text', { x: r.x0 + 5, y: r.y0 + 19, fill: 'white', stroke: 'black', 'stroke-width': 4, 'paint-order': 'stroke', 'font-size': 17, 'font-family': 'sans-serif' }); label.textContent = r.place_id; svg.append(label);
+                const tr = document.createElement('tr'); for (const text of [r.place_id, d.occupation_predite ? words.busy : words.free]) { const td = document.createElement('td'); td.textContent = text; tr.append(td); } tbody.append(tr);
+            });
+            document.getElementById('prev').disabled = choose.selectedIndex === 0; document.getElementById('next').disabled = choose.selectedIndex === data.frames.length - 1;
+        }
+        choose.addEventListener('change', show); document.getElementById('prev').onclick = () => { if (choose.selectedIndex > 0) { choose.selectedIndex--; show(); } }; document.getElementById('next').onclick = () => { if (choose.selectedIndex + 1 < data.frames.length) { choose.selectedIndex++; show(); } }; language.addEventListener('change', setLanguage); setLanguage();
+    </script>
+</body>
+
+</html>
