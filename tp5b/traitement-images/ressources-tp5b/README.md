@@ -1,0 +1,5 @@
+# Ressources du TP5b
+
+La scène de cellules accolées est générée de façon déterministe par `tp5b_outils.py`. Les objets et leurs étiquettes de référence sont synthétiques ; les étiquettes servent uniquement à évaluer le résultat. Une paire de cellules se touche dans chaque amas. Les centres fournis comme marqueurs représentent une information préalable disponible, pas une détection automatique.
+
+`ecoli_brightfield.tif` et `ecoli_instances.tif` sont une paire image/masque extraite du jeu de données DeepBacs de Spahn et Heilemann (2022), fichier source `train/brightfield/pos_0_slice_1.tif` et `train/masks/pos_0_slice_1.tif`. La micrographie en niveaux de gris et le masque d'instances ont une taille de 512 x 512 pixels. Chaque valeur non nulle du masque identifie une bactérie ; 0 désigne le fond. Le pas annoncé est de 106 nm/pixel (0,106 um/pixel). Le masque fourni est une annotation de référence et ne doit pas être utilisé pour construire une segmentation lors des activités 1 à 3. Source : [https://doi.org/10.5281/zenodo.6400327](https://doi.org/10.5281/zenodo.6400327).

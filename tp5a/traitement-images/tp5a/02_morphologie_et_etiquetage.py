@@ -7,14 +7,14 @@ from tp5a_outils import scene_bruitee, verifier, enregistrer
 
 reference, bruit = scene_bruitee()
 # TODO : appliquer une ouverture avec un disque de rayon 2.
-ouverture = None
+ouverture = morphology.opening(bruit , morphology.disk(2))
 verifier(ouverture)
 # TODO : appliquer une fermeture avec un disque de rayon 2 au masque d'origine.
-fermeture = None
+fermeture = morphology.closing(bruit , morphology.disk(2))
 verifier(fermeture)
 # TODO : étiqueter la référence en 4-connexité, puis en 8-connexité.
-labels_4 = None
-labels_8 = None
+labels_4 = morphology.label(reference , connectivity=1)
+labels_8 = morphology.label(reference , connectivity=2)
 verifier(labels_4)
 verifier(labels_8)
 print('Composantes -- référence 4/8 :', labels_4.max(), labels_8.max())
