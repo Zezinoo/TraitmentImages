@@ -181,7 +181,7 @@ Pour le prototype des différences de gaussiennes (DoG), on a essayé d'abord, c
 
 On a fait des essais avec 20 px et 500 px, et finalement choisi 20 px pour avoir une meilleure performance. En regardant les valeurs avec le fichier test_blurring.py, on est arrivé à un DECISION THRESHOLD adapté de 0.11.
 
-Pour le prototype du seuil de Sauvola, on a tenté de l'utiliser pour avoir une information locale sur les images et pourtant essayer de s'affranchir des effets d'illumination et d'ombre trop marqués. On a utilisé l'implémentation de la bibliothèque skimage. On a fait de telle sorte qu'on ne gardait que les pixels correspondant aux voitures, comme détaillé dans le code.
+Pour le prototype du seuil de Sauvola, on a tenté de l'utiliser pour avoir une information locale sur les images et pourtant essayer de s'affranchir des effets d'illumination excessive. On a utilisé l'implémentation de la bibliothèque skimage. On a fait de telle sorte qu'on ne gardait que les pixels correspondant aux voitures, comme détaillé dans le code.
 
 On a remarqué que, dans les deux cas, il y a des jours où le F1 score n'est pas bon, surtout parce que la valeur du recall n'était pas trop adaptée. Un jour comme ça, c'est le jour 2026-01-16, qui comprend les images V017-V024. On a un F1 score bas car on a des faux positifs dans ces images, notamment quand on a de l'humidité sur le sol.
 
@@ -309,7 +309,11 @@ Oui. On vous rappelle que le code le plus à jour et dans son intégralité rest
 
 On a essayé d'améliorer les paramètres comme le seuil de décision de l'ensemble de Sauvola et de la méthode gaussienne, ainsi que les indices donnés à chaque prédiction pour le score final.
 
-On a fait un balayage des paramètres optimaux de la combinaison linéaire du seuil de Sauvola et de la méthode gaussienne pendant la séance, et on essaye de les réparer et de faire un graphe des variations.
+On a fait un balayage des paramètres optimaux de la combinaison linéaire du seuil de Sauvola et de la méthode gaussienne pendant la séance, et on essaye de les ajuster et de faire un graphe des variations. En effet, il y a 5 variables repérées (3 seuils et 2 pourcentages pour la somme des scores) qu'on cherche à explorer pour obtenir une meilleure précision.
+
+Un example de le balayage est dans le graphe suivant. Sur y accuracite et en x on a le score gaussian * 10
+
+![Différence absolue en niveaux de gris, référence sigma = 20](results/project-log-figures/comparaison_meteo.png)
 
 ## Contributions et assistance / Contributions and assistance
 
@@ -348,4 +352,4 @@ python run.py --method joint --name joint
 
 **Limite principale que nous savons expliquer / Main limitation we can explain :**
 
-On a une limite sur la détection des espaces non occupés qui ont de l'humidité sur le seuil.
+On a une limite sur la détection des espaces non occupés qui ont de l'humidité sur le seuil. On a encore quelques soucis avec des faux positifs causés par des ombres trop marquées les jours ensoleillés.
