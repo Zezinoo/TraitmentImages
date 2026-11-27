@@ -166,31 +166,156 @@ The full pipeline may remain unfinished. Checkpoint 1 requires one personal proc
 
 ## Fin de la seconde séance / End of the second session
 
-**Date :**
+**Date :** 27/11/2026
 
 **Essai exécuté et nom du CSV / Run completed and prediction CSV filename :**
+diference_of_gaussians
+diffrence_of_gaussians_mean
+sauvola
 
 **Étapes du prototype réellement exécutées, résultats intermédiaires et étapes manquantes / Prototype steps actually run, intermediate results, and missing steps :**
 
+Pour le prototype des différences de gaussiennes (DoG), on a essayé d'abord, comme décrit dans la séance d'avant, d'explorer les valeurs possibles pour l'écart-type des noyaux gaussiens. En effet, on cherche pour l'image de référence un écart-type qui lisse les détails de basse fréquence en rapprochant la référence d'un bruit uniforme. On cherche aussi une valeur adaptée pour le noyau gaussien de l'image actuelle, celui-ci étant beaucoup plus petit pour enlever les fréquences spatiales qui se rapprochent du bruit. Avant tout ça, on a converti l'image de RGB en niveaux de gris.
+
+On a fait des essais avec 20 px et 500 px, et finalement choisi 20 px pour avoir une meilleure performance. En regardant les valeurs avec le fichier test_blurring.py, on est arrivé à un DECISION THRESHOLD adapté de 0.11.
+
+Pour le prototype du seuil de Sauvola, on a tenté de l'utiliser pour avoir une information locale sur les images et pourtant essayer de s'affranchir des effets d'illumination et d'ombre trop marqués. On a utilisé l'implémentation de la bibliothèque skimage. On a fait de telle sorte qu'on ne gardait que les pixels correspondant aux voitures, comme détaillé dans le code.
+
+On a remarqué que, dans les deux cas, il y a des jours où le F1 score n'est pas bon, surtout parce que la valeur du recall n'était pas trop adaptée. Un jour comme ça, c'est le jour 2026-01-16, qui comprend les images V017-V024. On a un F1 score bas car on a des faux positifs dans ces images, notamment quand on a de l'humidité sur le sol.
+
+Dans cette séance, on a essayé de lier les deux méthodes afin de voir si on pouvait se servir des forces des deux. Pour ça, on a pris finalement un score donné par la prédiction gaussienne, un score donné par la prédiction de Sauvola, et on prend comme score final une combinaison linéaire des deux.
+
+```python
+def predict(image, reference, box):
+    gaussian_result = predict_Gaussian(image, reference, box)
+    sauvola_result = predict_Sauvola(image, reference, box)
+
+    if gaussian_result[1] == sauvola_result[1]:
+        final_decision = gaussian_result[1]
+        final_score = sauvola_result[0]
+    else:
+        final_score = (gaussian_result[0] + sauvola_result[0]) / 2
+        final_decision = int(final_score > DECISION_THRESHOLD)
+
+    return final_score, final_decision
+```
+
+En effet, ce que ça fait, c'est que, si les deux décisions sont en accord, on prend le score de Sauvola ; sinon, on prend le rapport moyen des décisions et on le compare avec le DECISION_THRESHOLD.
+
+![Confusion matrices for joint pipeline v1](results/project-log-figures/confusion-matrices_joint_v1.png)
+
+On voit qu'avec cette méthode, on est arrivé à une accuracy globale de 95.98 %, avec les métriques suivantes :
+
+| Metric | Value |
+|---|---:|
+| Precision | 96.58% |
+| Recall | 97.80% |
+| F1 score | 97.19% |
+| Accuracy | 95.98% |
+
 **Masque et mesure, s'ils sont disponibles / Mask and measurement, if available :**
+
+On a utilisé un masque de Sauvola.
+
+```python
+    seuil_sauvola = filters.threshold_sauvola(
+        current, window_size=41, k=0.2, r=0.5
+    )
+    masque_sauvola = current < seuil_sauvola
+
+    # On fait un seuillage sur l'image de référence.
+    empty_threshold = filters.threshold_sauvola(
+        empty, window_size=41, k=0.2, r=0.5
+    )
+
+    # Ici, on a les pixels sombres qui existaient avant les voitures.
+    empty_mask = empty < empty_threshold
+
+    # On ne garde que les pixels sombres qui n'existaient pas avant les voitures.
+    new_pixels = masque_sauvola & ~empty_mask
+```
 
 **Commande reproduisant une étape exécutée et figure jointe (par exemple `case_study/results/checkpoint-2.png`) / Command reproducing a completed step and attached figure (for example `case_study/results/checkpoint-2.png`) :**
 
+Pour faire tourner le pipeline, on a légèrement modifié le fichier run.py afin d'ajouter une option joint pour la méthode du pipeline. Cette méthode joint correspond donc à l'alliance entre Sauvola et le DoG. Du coup, pour faire tourner le pipeline, on fait :
+
+```python
+python run.py --method joint
+```
+
+Donc, on peut regarder les résultats sur une image et ensuite les métriques comme la matrice de confusion, l'accuracy par jour et par météo.
+
+![Exemple d'image avec les décisions pour le pipeline joint](results/project-log-figures/V031_joint_v1.png)
+
 **Résultats sur les ensembles de réglage et de validation si la méthode produit déjà des décisions ; sinon, analyse des résultats intermédiaires / Tuning-set and validation-set results if the method already produces decisions; otherwise, intermediate-result analysis :**
+
+**Performances selon la météo**
+
+![Exactitude et score F1 selon la météo](results/project-log-figures/metrics-by-weather_joint.png)
+
+On voit qu'on a une légère difficulté à classer des voitures sur des espaces avec du soleil.
+
+**Performances par journée**
+
+![Exactitude et score F1 par journée](results/project-log-figures/metrics-by-day_joint.png)
+
+Évolution des performances selon la journée.
+
+**Distribution des scores**
+
+![Distribution des scores des places libres et occupées](results/project-log-figures/score-distributions_joint.png)
+
+Les places libres ont généralement des scores plus faibles que les places occupées. Le chevauchement des distributions explique certaines erreurs de classification. On peut essayer de les régler avec une calibration plus sensible.
+
+**Sensibilité au seuil de décision**
+
+![Score F1 en fonction du seuil de décision](results/project-log-figures/threshold-sensitivity_joint.png)
+
+Cette courbe applique différents seuils aux scores sauvegardés, sans recalculer les méthodes gaussienne et de Sauvola.
+
+**Exemples d'erreurs**
+
+![Exemples de places mal classées](results/project-log-figures/error-examples_joint.png)
+
+Chaque exemple indique l'image, la place, l'état réel et la prédiction. La valeur 0 correspond à une place libre et la valeur 1 à une place occupée. On peut se baser sur ces erreurs afin de chercher à améliorer nos méthodes.
 
 **Résultat observé et situation difficile analysée (identifiants image/place), même si la chaîne reste incomplète / Observed result and analysis of a difficult situation (image and space IDs), even if the pipeline is unfinished :**
 
+On analyse deux résultats sur deux situations difficiles sur les images V055 et V056. Sur l'image V056, l'algorithme se trompe et on a un faux négatif. On essaye de comprendre pourquoi.
+
+**Première situation difficile — image V055**
+
+![Situation difficile sur l'image V055](results/project-log-figures/V055_joint_v1_difficult.png)
+
+**Deuxième situation difficile — image V056**
+
+![Situation difficile sur l'image V056](results/project-log-figures/V056_joint_v1_difficult2.png)
+
+V056,201,2016-02-12,16:24,rainy,validation,0.079508,0
+
+Les valeurs des scores calculés à la fin sont au-dessous du seuil pris, car l'arbre rend la décision difficile.
+
+L'image V056 est une situation où le filtre gaussien arrive bien à détecter la voiture, mais le seuil de Sauvola n'y arrive pas. Donc, pour ça, il nous faut bien veiller à faire une calibration affinée des valeurs de la combinaison.
+
+![Différence absolue en niveaux de gris, référence sigma = 20](results/project-log-figures/difference-gaussienne-sigma20.png)
+
 **Les résultats joints correspondent-ils au code déposé ? Sinon, précisez les différences / Do the attached results correspond to the submitted code? If not, explain the differences :**
+
+Oui. On vous rappelle que le code le plus à jour et dans son intégralité reste disponible sur https://github.com/Zezinoo/TraitmentImages.
 
 **Travail restant avant le rendu final / Work remaining before the final submission :**
 
+On a essayé d'améliorer les paramètres comme le seuil de décision de l'ensemble de Sauvola et de la méthode gaussienne, ainsi que les indices donnés à chaque prédiction pour le score final.
+
+On a fait un balayage des paramètres optimaux de la combinaison linéaire du seuil de Sauvola et de la méthode gaussienne pendant la séance, et on essaye de les réparer et de faire un graphe des variations.
+
 ## Contributions et assistance / Contributions and assistance
 
-Précisez les contributions de chaque membre. Pour chaque usage d'un assistant IA, indiquez l'outil, la tâche, les fichiers ou passages concernés, ce qui a été repris ou modifié, et comment vous avez vérifié le résultat. Ajoutez une ligne à chaque nouvelle utilisation, y compris pendant le travail personnel. Si vous n'avez pas utilisé d'assistant IA, écrivez explicitement "aucune assistance IA".
+Précisez les contributions de chaque membre. Pour chaque usage d'un assistant IA, indiquez l'outil, la tâche, les fichiers ou passages concernés, ce qui a été repris ou modifié, et comment vous avez vérifié le résultat. Ajoutez une ligne à chaque nouvelle utilisation, y compris pendant le travail personnel. Si vous n'avez pas utilisé d'assistant IA, écrivez explicitement « aucune assistance IA ».
 
 State each team member's contribution. For every use of an AI assistant, give the tool, task, affected files or report sections, what you retained or changed, and how you checked the result. Add a row for each new use, including work done after class. If you used no AI assistant, write "no AI assistance" explicitly.
 
-| Moment / Stage | Membre / Team member | Travail réalisé / Work completed | Assistant IA et aide obtenue, ou "aucune" / AI assistant and help received, or "none" | Vérifications et modifications / Checks and changes |
+| Moment / Stage | Membre / Team member | Travail réalisé / Work completed | Assistant IA et aide obtenue, ou « aucune » / AI assistant and help received, or "none" | Vérifications et modifications / Checks and changes |
 |---|---|---|---|---|
 | Séance 1 / Session 1 | | | | |
 | Séance 2 / Session 2 | | | | |
@@ -207,9 +332,18 @@ The final submission includes a complete, reproducible pipeline and a finished r
 **Vérification de l'exécution sur toutes les images fournies, des scores finis et des décisions 0 ou 1 / Checks that the pipeline runs on all supplied images, returns finite scores, and outputs decisions of 0 or 1 :**
 
 **Paramètres et bibliothèques nécessaires / Required parameters and libraries :**
+scikit-image
+numpy
+scipy
+pandas
 
 **Nom de la méthode retenue et commande qui régénère les résultats / Selected method and command that reproduces the results :**
+Seuil de Sauvola
+Différence de gaussiennes
+python run.py --method joint --name joint
 
 **Écart entre le prototype de la seconde séance et le rendu final / Changes between the second-session prototype and final submission :**
 
 **Limite principale que nous savons expliquer / Main limitation we can explain :**
+
+On a une limite sur la détection des espaces non occupés qui ont de l'humidité sur le seuil.

@@ -7,7 +7,7 @@ from skimage.color import rgb2gray
 from tools import crop
 
 
-DECISION_THRESHOLD = 0.1
+DECISION_THRESHOLD = 0.11
 
 
 def predict(image, reference, box):
@@ -29,7 +29,7 @@ def predict(image, reference, box):
     empty = rgb2gray(crop(reference, box))
 
     smoothed_current = ndimage.gaussian_filter(current, sigma=3, mode='reflect')
-    smoothed_empty =  ndimage.gaussian_filter(empty, sigma=20, mode='reflect')
+    smoothed_empty =  ndimage.gaussian_filter(empty, sigma=20 , mode='reflect')
 
     difference = smoothed_current - smoothed_empty
     decision = np.mean(np.abs(difference) )

@@ -47,7 +47,7 @@ reference = load_image(next(row["filename"] for row in images
                                 if row["image_id"] == "R00"))
 reference = rgb2gray(reference)
 
-TEST_IMAGE_ID = "C054"
+TEST_IMAGE_ID = "V056"
 TEST_SIGMA = 3
 test_image = load_image(next(row["filename"] for row in images
                              if row["image_id"] == TEST_IMAGE_ID))

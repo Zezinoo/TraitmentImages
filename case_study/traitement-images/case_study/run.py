@@ -81,14 +81,17 @@ def run(predict=None, name="trial1"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--method", choices=("personal", "baseline"), default="personal",
-                        help="Team pipeline (default) or supplied baseline")
+    parser.add_argument("--method", choices=("personal", "baseline", "joint"), default="personal",
+                        help="Team pipeline (default), supplied baseline, or joint pipeline")
     parser.add_argument("--name",
                         help="Short trial name used to preserve its results")
     options = parser.parse_args()
-    name = options.name or ("baseline" if options.method == "baseline" else "trial1")
+    default_names = {"personal": "trial1", "baseline": "baseline", "joint": "joint"}
+    name = options.name or default_names[options.method]
     method = baseline if options.method == "baseline" else None
     try:
+        if options.method == "joint":
+            from joint_pipeline import predict as method
         run(predict=method, name=name)
     except NotImplementedError as error:
         parser.exit(1, f"{error}\n")
