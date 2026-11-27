@@ -166,6 +166,8 @@ The full pipeline may remain unfinished. Checkpoint 1 requires one personal proc
 
 ## Fin de la seconde séance / End of the second session
 
+ATTENTION : Les images de decision ne sont pas dans le fichier que va avec le compte rendu, mais elle sont disponibles sur https://github.com/Zezinoo/TraitmentImages
+
 **Date :** 27/11/2026
 
 **Essai exécuté et nom du CSV / Run completed and prediction CSV filename :**
